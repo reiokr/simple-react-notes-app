@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react@17/umd/react.development.js"
+    ></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"
+    ></script>
+    <style>
+      .note {
+        width: 250px;
+        height: 150px;
+        background-color: yellow;
+        padding: 15px;
+        box-shadow: 2px 6px 12px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        margin: 10px;
+      }
+      .board {
+        background-color: #bfd8d8;
+        position: fixed;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+      }
+      button {
+        padding: 10px 15px;
+        background-color: chocolate;
+        border: 0;
+        margin: 5px;
+        border-radius: 9999px;
+        outline: 0;
+        width: fit-content;
+        cursor: pointer;
+        color: white;
+        text-shadow: 0 0 2px rgba(0, 0, 0, 0.9);
+        font-weight: bold;
+      }
+      button:hover {
+        background-color: rgb(187, 93, 25);
+      }
+      textarea {
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="react-container"></div>
+
+    <script type="text/babel">
+      class Note extends React.Component {
+        constructor(props) {
+          super(props);
+          this.state = { editing: false };
+        }
+
+        edit = () => {
+          this.setState({ editing: true });
+        };
+
+        save = () => {
+          this.props.onChange(this.refs.newText.value, this.props.id);
+          this.setState({ editing: false });
+        };
+
+        delete = () => {
+          this.props.onRemove(this.props.id);
+        };
+
+        renderForm = () => {
+          return (
+            <div className="note">
+              <textarea id="text-area" ref="newText" rows="6"></textarea>
+
+              <button onClick={this.save}>Save</button>
+            </div>
+          );
+        };
+
+        renderDisplay = () => {
+          return (
+            <div className="note">
+              <p>{this.props.children}</p>
+
+              <span>
+                <button onClick={this.edit}>Edit</button>
+                <button onClick={this.delete}>X</button>
+              </span>
+            </div>
+          );
+        };
+
+        render() {
+          if (this.state.editing) {
+            return this.renderForm();
+          } else {
+            return this.renderDisplay();
+          }
+        }
+      }
+
+      ReactDOM.render(
+        <Note>Hello, this is sticky note!</Note>,
+        document.getElementById("react-container")
+      );
+
+      class Board extends React.Component {
+        constructor(props) {
+          super(props);
+          this.state = {
+            notes: JSON.parse(localStorage.getItem("notes")) || [],
+          };
+        }
+
+        nextId = () => {
+          this.uniqueId = this.uniqueId || 0;
+          this.state.notes.forEach((note) => {
+            while (note.id == this.uniqueId) {
+              this.uniqueId++;
+              return this.nextId();
+            }
+          });
+          return this.uniqueId;
+        };
+
+        add = (text) => {
+          var notes = [
+            ...this.state.notes,
+            {
+              id: this.nextId(),
+              note: text,
+            },
+          ];
+          this.setState({ notes: notes });
+        };
+
+        update = (newText, id) => {
+          var notes = this.state.notes.map((note) =>
+            note.id !== id
+              ? note
+              : {
+                  ...note,
+                  note: newText,
+                }
+          );
+          localStorage.setItem("notes", JSON.stringify(notes));
+          this.setState({ notes });
+        };
+        remove = (id) => {
+          var notes = this.state.notes.filter((note) => note.id !== id);
+          this.setState({ notes });
+          localStorage.setItem("notes", JSON.stringify(notes));
+        };
+        eachNote = (note, i) => {
+          return (
+            <Note
+              key={note.id}
+              id={note.id}
+              onChange={this.update}
+              onRemove={this.remove}
+            >
+              {note.note}
+            </Note>
+          );
+        };
+
+        render() {
+          return (
+            <div className="board">
+              {this.state.notes.map(this.eachNote)}
+              <button onClick={() => this.add()}>+</button>
+            </div>
+          );
+        }
+      }
+
+      ReactDOM.render(
+        <Board count={10} />,
+        document.getElementById("react-container")
+      );
+    </script>
+  </body>
+</html>
